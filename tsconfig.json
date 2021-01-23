@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "sourceMap": true,
+    "lib": ["es2015", "DOM", "ES5", "ScriptHost"]
+  },
+  "exclude": [
+    "node_modules",
+    "types.ts"
+  ]
+}

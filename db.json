@@ -1,0 +1,24 @@
+{
+  "ETHUSDT": {
+    "tradingGrids": [
+      {
+        "tid": "",
+        "tradeStatus": 4,
+        "operatingPrice": 1175.5,
+        "operatingAmount": 0.01274,
+        "tradingType": 0,
+        "nextBuyPrice": 1116.72,
+        "needSellPrice": 1234.27,
+        "sellAmount": 0.01274
+      },
+      {
+        "tid": "",
+        "tradeStatus": 4,
+        "operatingPrice": 1234.27,
+        "operatingAmount": 15.724,
+        "tradingType": 1,
+        "nextBuyPrice": 1172.56
+      }
+    ]
+  }
+}

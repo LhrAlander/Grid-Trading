@@ -1,0 +1,20 @@
+{
+  "name": "grid-trading_digital-currency",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "repository": "https://github.com/LhrAlander/grid-trading_digital-currency.git",
+  "author": "LhrAlander<AlanderLt@163.com>",
+  "license": "MIT",
+  "scripts": {
+    "tsc:watch": "tsc --watch",
+    "start": "node index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.20"
+  },
+  "dependencies": {
+    "@types/request": "^2.48.5",
+    "axios": "^0.21.1",
+    "request": "^2.88.2"
+  }
+}

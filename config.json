@@ -1,0 +1,11 @@
+{
+  "baseOptions": {
+    "tradingPair": "ETHUSDT",
+    "targetCoin": "ETH",
+    "anchorCoin": "USDT",
+    "buyDownRate": 5,
+    "sellUpRate": 5,
+    "fixNum": 2,
+    "needBuyAnchorAmount": 30
+  }
+}
