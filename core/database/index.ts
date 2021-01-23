@@ -21,4 +21,8 @@ export default class DataBaseHelper {
   getGrids() {
     return this.data.tradingGrids;
   }
+
+  flushIntoFile() {
+    return this.dbInstance.flushDataIntoFile();
+  }
 }

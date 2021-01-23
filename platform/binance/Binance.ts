@@ -34,6 +34,7 @@ const tradeStatusMap: {
 
 const orderUrl = 'https://api.binance.com/api/v3/order'
 const priceUrl = 'https://api.binance.com/api/v3/ticker/price'
+const balanceUrl = 'https://api.binance.com/sapi/v1/capital/config/getall'
 
 export default class Binance implements IBotPlatformIndependentAbilities {
 
@@ -44,12 +45,15 @@ export default class Binance implements IBotPlatformIndependentAbilities {
       type: ETradeType.LIMIT,
       timeInForce: ETimeInForce.GTC,
       timestamp: +new Date(),
-      quoteOrderQty: anchorCoinCount,
+      quantity: Number((anchorCoinCount / price).toFixed(2)),
       price,
       newOrderRespType: ETradeRespType.ACK
     }
     try {
       const resp = await this.post<ITradeRequestParams, ITradeResponseParams>(orderUrl, params);
+      if (!resp.clientOrderId) {
+        throw resp;
+      }
       return resp.clientOrderId;
     } catch(e) {
       GridError.logError(e);
@@ -77,8 +81,16 @@ export default class Binance implements IBotPlatformIndependentAbilities {
     return false
   }
 
-  getAccountBalance(key: string): Promise<number> {
-    return Promise.resolve(0)
+  async getAccountBalance(key: string): Promise<number> {
+    try {
+      const resp = await this.get<any, any>(balanceUrl, {timestamp: +new Date()}, true);
+      return Number(resp.filter(coin => {
+        return coin.coin === key
+      })[0].free);
+    } catch(err) {
+      GridError.logError(err);
+    }
+    return NaN;
   }
 
   async getCurrentPrice(tradePair: string): Promise<number> {
@@ -126,8 +138,12 @@ export default class Binance implements IBotPlatformIndependentAbilities {
       price,
       newOrderRespType: ETradeRespType.ACK
     }
+    console.log('in sell', params)
     try {
       const resp = await this.post<ITradeRequestParams, ITradeResponseParams>(orderUrl, params);
+      if (!resp.clientOrderId) {
+        throw resp;
+      }
       return resp.clientOrderId;
     } catch(e) {
       GridError.logError(e);
@@ -137,7 +153,7 @@ export default class Binance implements IBotPlatformIndependentAbilities {
 
   private get<T, R>(url, params: any, needSign: boolean): Promise<R> {
     if (needSign) {
-      params.sign = this.getSignParams(params);
+      params.signature = this.getSignParams(params);
     }
     const urlParams = Object.keys(params).reduce<string[]>((result, key) => {
       result.push(`${key}=${params[key]}`)

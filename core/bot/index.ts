@@ -5,7 +5,7 @@ import TradingError, {ETradingErrorType} from '../utils/TradingError'
 import GridError from '../utils/GridError'
 
 const PLATFORM_REQUEST_DURATION = 2000
-const PLATFORM_TRADE_OPERATE_DURATION = 1 * 60 * 1000
+const PLATFORM_TRADE_OPERATE_DURATION = 0.5 * 60 * 1000
 
 function isTradeFinish(grid: ITradingGrid) {
   return [
@@ -41,7 +41,7 @@ export default class TradeBot {
     if (!baseOptions || typeof baseOptions !== 'object') {
       throw new Error('未正确设置机器人参数')
     }
-    this.baseOptions = baseOptions;
+    this.baseOptions = baseOptions
 
     this.dbHelper = new DataBaseHelper(this.baseOptions.tradingPair)
     this.grids = this.dbHelper.getGrids()
@@ -73,8 +73,8 @@ export default class TradeBot {
         this.inIntervalWork ||
         this.needUpdateBuyTrade ||
         this.needUpdateSellTrade ||
-        this.lastIntervalTime &&
-        +new Date() - this.lastIntervalTime < PLATFORM_REQUEST_DURATION
+        (this.lastIntervalTime &&
+          +new Date() - this.lastIntervalTime < PLATFORM_REQUEST_DURATION)
       ) {
         return
       }
@@ -84,10 +84,11 @@ export default class TradeBot {
       try {
         const currentPrice = await this.abilities.getCurrentPrice(this.baseOptions.tradingPair)
         await this.dealPrice(currentPrice)
+        this.inIntervalWork = false
       } catch (err) {
+        this.inIntervalWork = false
         throw err
       } finally {
-        this.inIntervalWork = false
       }
     }, PLATFORM_REQUEST_DURATION)
   }
@@ -98,10 +99,10 @@ export default class TradeBot {
 
   private async dealPrice(price: number) {
     const validNeedSellGrids = this.grids.filter(grid => {
-      if (isTradeFinish(grid) || grid.tradingType === ETradingType.SELL) {
+      if (grid.tradingType === ETradingType.SELL) {
         return false
       }
-      return grid.needSellPrice <= price && grid.sellAmount <= grid.operatingAmount
+      return grid.needSellPrice <= price && grid.sellAmount < grid.operatingAmount
     })
     const validLastOperateGrid = this.grids[this.grids.length - 1]
 
@@ -120,11 +121,19 @@ export default class TradeBot {
   }
 
   async doSell(grids: ITradingGrid[], price: number) {
-    const amount = grids.reduce<number>((res, {operatingAmount, sellAmount}) => {
-      return res + operatingAmount - Number(sellAmount)
-    }, 0)
     try {
-      const tid = await this.abilities.sellCoin(price, amount, this.baseOptions.targetCoin)
+      let balance = await this.abilities.getAccountBalance('ETH')
+      let amount = grids.reduce<number>((res, {operatingAmount, sellAmount}) => {
+        return res + operatingAmount - Number(sellAmount)
+      }, 0)
+      amount = amount > balance ? balance : amount;
+      amount = Math.floor( amount * 100 ) / 100
+      if (amount <= 0) {
+        this.needUpdateSellTrade = false
+        this.start()
+        return console.log('账户不够卖出或余额不满足最低卖出数量，继续运行')
+      }
+      const tid = await this.abilities.sellCoin(price, amount, this.baseOptions.tradingPair)
       if (tid) {
         console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 挂单成功，暂停一分钟运行等待挂单结果`)
         this.needUpdateSellTrade = true
@@ -137,35 +146,36 @@ export default class TradeBot {
               operatingPrice
             } = await this.abilities.searchTrade(tid, this.baseOptions.tradingPair)
             await this.abilities.cancelTrade(tid, this.baseOptions.tradingPair)
-            console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 查询条件成功`)
+            console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 查询条件成功`, {grids})
             let reserveAmount = gainAmount
-            if (givenAmount && gainAmount) {
-              grids.forEach(grid => {
-                grid.sellTids = Array.from(new Set(grid.sellTids.concat(tid)))
-                const needSellAmount = grid.operatingAmount - Number(grid.sellAmount)
-                if (needSellAmount <= 0 || !reserveAmount) return
-                if (needSellAmount <= reserveAmount) {
-                  grid.sellAmount += needSellAmount
-                  reserveAmount -= needSellAmount
-                } else {
-                  reserveAmount = 0
-                  grid.sellAmount += reserveAmount
-                }
-                this.dbHelper.updateOrAddGrid(grid)
-              })
-              const newGrid: ITradingGrid = {
-                tid,
-                tradeStatus: status,
-                operatingTime: +new Date() + '',
-                operatingTimeFormat: (new Date()).toLocaleDateString(),
-                operatingPrice,
-                operatingAmount: gainAmount,
-                tradingType: ETradingType.SELL,
-                nextBuyPrice: Number((operatingPrice * (1 - this.baseOptions.buyDownRate)).toFixed(this.baseOptions.fixNum)),
+            grids.forEach(grid => {
+              grid.sellTids = Array.from(new Set(grid.sellTids.concat(tid)))
+              const needSellAmount = grid.operatingAmount - Number(grid.sellAmount)
+              if (needSellAmount <= 0 || !reserveAmount) return
+              if (needSellAmount <= reserveAmount) {
+                grid.sellAmount += needSellAmount
+                reserveAmount -= needSellAmount
+              } else {
+                grid.sellAmount += reserveAmount
+                reserveAmount = 0
               }
-              this.dbHelper.updateOrAddGrid(newGrid)
+              this.dbHelper.updateOrAddGrid(grid)
+            })
+            const newGrid: ITradingGrid = {
+              tid,
+              tradeStatus: status,
+              operatingTime: +new Date() + '',
+              operatingTimeFormat: (new Date()).toLocaleTimeString(),
+              operatingPrice,
+              operatingAmount: gainAmount,
+              tradingType: ETradingType.SELL,
+              nextBuyPrice: Number((operatingPrice * (1 - this.baseOptions.buyDownRate)).toFixed(this.baseOptions.fixNum)),
             }
+            this.grids.push(newGrid)
+            this.dbHelper.updateOrAddGrid(newGrid)
+            this.dbHelper.flushIntoFile()
           } catch (err) {
+            GridError.logError(err)
           } finally {
             this.needUpdateSellTrade = false
             this.start()
@@ -179,10 +189,10 @@ export default class TradeBot {
 
   async doBuy(grid: ITradingGrid, price: number) {
     try {
-      const tid = await this.abilities.buyCoin(price, this.baseOptions.needBuyAnchorAmount, this.baseOptions.targetCoin)
+      const tid = await this.abilities.buyCoin(price, this.baseOptions.needBuyAnchorAmount, this.baseOptions.tradingPair)
       if (tid) {
 
-        console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 挂单失败，暂停一分钟运行等待挂单结果`)
+        console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 挂单成功，暂停一分钟运行等待挂单结果`)
         this.needUpdateBuyTrade = true
         setTimeout(async () => {
           try {
@@ -194,24 +204,26 @@ export default class TradeBot {
             } = await this.abilities.searchTrade(tid, this.baseOptions.tradingPair)
             await this.abilities.cancelTrade(tid, this.baseOptions.tradingPair)
             console.log(`当前${this.baseOptions.tradingPair}买单 ${tid} 查询条件成功`)
-            if (givenAmount && gainAmount) {
-              const newGrid: ITradingGrid = {
-                tid,
-                tradeStatus: status,
-                operatingTime: +new Date() + '',
-                operatingTimeFormat: (new Date()).toLocaleDateString(),
-                operatingPrice,
-                operatingAmount: gainAmount,
-                tradingType: ETradingType.BUY,
-                nextBuyPrice: Number((operatingPrice * (1 - this.baseOptions.buyDownRate)).toFixed(this.baseOptions.fixNum)),
-                needSellPrice: Number((operatingPrice * (1 + this.baseOptions.sellUpRate)).toFixed(this.baseOptions.fixNum)),
-                sellAmount: 0,
-                sellTids: []
-              }
-              this.dbHelper.updateOrAddGrid(newGrid)
+            const newGrid: ITradingGrid = {
+              tid,
+              tradeStatus: status,
+              operatingTime: +new Date() + '',
+              operatingTimeFormat: (new Date()).toLocaleTimeString(),
+              operatingPrice,
+              operatingAmount: gainAmount,
+              tradingType: ETradingType.BUY,
+              nextBuyPrice: Number((operatingPrice * (1 - this.baseOptions.buyDownRate)).toFixed(this.baseOptions.fixNum)),
+              needSellPrice: Number((operatingPrice * (1 + this.baseOptions.sellUpRate)).toFixed(this.baseOptions.fixNum)),
+              sellAmount: 0,
+              sellTids: []
             }
+            this.grids.push(newGrid)
+            this.dbHelper.updateOrAddGrid(newGrid)
+            this.dbHelper.flushIntoFile()
           } catch (err) {
+            GridError.logError('程序运行出错，买入后未能写入日志，中断运行否则会造成资产损失')
             GridError.logError(err)
+            process.exit(1)
           } finally {
             this.needUpdateBuyTrade = false
             this.start()
@@ -220,7 +232,7 @@ export default class TradeBot {
       }
     } catch (err) {
       if (err instanceof TradingError && err.code === ETradingErrorType.NO_ENOUGH_BALANCE) {
-        console.error('告警！：账户余额不足！', { grid, price })
+        console.error('告警！：账户余额不足！', {grid, price})
       }
       GridError.logError(err)
     }

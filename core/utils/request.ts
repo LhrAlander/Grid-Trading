@@ -22,7 +22,7 @@ class Request {
       request.post(url, {
         ...proxyOptions,
         ...options,
-        body,
+        qs: body,
         json: true
       }, (err, resp, data: R) => {
         if (err) {
@@ -37,7 +37,7 @@ class Request {
     return new Promise<R>((resolve, reject) => {
       request.delete(url, {
         ...proxyOptions,
-        body,
+        qs: body,
         json: true,
         ...options
       }, (err, resp, data: R) => {

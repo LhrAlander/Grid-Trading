@@ -3,9 +3,9 @@
     "tradingPair": "ETHUSDT",
     "targetCoin": "ETH",
     "anchorCoin": "USDT",
-    "buyDownRate": 5,
-    "sellUpRate": 5,
+    "buyDownRate": 0.05,
+    "sellUpRate": 0.05,
     "fixNum": 2,
-    "needBuyAnchorAmount": 30
+    "needBuyAnchorAmount": 12
   }
 }
