@@ -29,5 +29,11 @@
 4. config.json.sellUpRate 和 config.json.buyDownRate 自行设置，记住是 < 1
 5. db.json中的记录主要观察下 nextBuyPrice 和 needSellPrice符不符合要求，如有问题可反馈
 
+# 项目运行
+1. 确保有node环境，没有请自行安装
+2. 确保用ts环境，没有的话请 ``npm i typescript -g``
+3. ``tsc``
+4. ``node ./index.js``
+
 # 免责声明
 该项目只做为个人学习使用，如造成任何损失本人概不负责。
