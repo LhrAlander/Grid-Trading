@@ -1,8 +1,8 @@
-import {IBotPlatformIndependentAbilities, IBotTrade} from '../../core/bot/types'
-import request from '../../core/utils/request'
-import {apiKey, apiSecret} from './config'
-import {ETradeStatus as ECoreTradeStatus} from '../../core/bot/types'
+import {ETradeStatus as ECoreTradeStatus, IBotPlatformIndependentAbilities, IBotTrade} from '../../core/bot/types';
+import request from '../../core/utils/request';
+import {apiKey, apiSecret} from './config';
 import {
+  EAPIErrorCode,
   ETimeInForce,
   ETradeDirection,
   ETradeRespType,
@@ -15,9 +15,10 @@ import {
   ISearchTradeRequestParams,
   ISearchTradeResponseParams,
   ITradeRequestParams,
-  ITradeResponseParams
-} from './types'
-import GridError from '../../core/utils/GridError'
+  ITradeResponseParams,
+  TBinanceResp
+} from './types';
+import GridError from '../../core/utils/GridError';
 
 const crypto = require('crypto')
 
@@ -114,7 +115,21 @@ export default class Binance implements IBotPlatformIndependentAbilities {
       origClientOrderId: tid
     }
     try {
-      const resp = await this.get<ISearchTradeRequestParams, ISearchTradeResponseParams>(orderUrl, params, true);
+      let resp = await this.get<ISearchTradeRequestParams, TBinanceResp<ISearchTradeResponseParams>>(orderUrl, params, true);
+      if (resp.code === EAPIErrorCode.NO_SUCH_ORDER) {
+        console.log('查无订单，订单号：' + tid + ' 30s后重新尝试获取订单')
+        let prev = +new Date();
+        while(true) {
+          const current = +new Date();
+          if (current - prev > 30 * 1000) {
+            break;
+          }
+        }
+        if (resp.code === EAPIErrorCode.NO_SUCH_ORDER) {
+          console.log('重新获取订单：' + tid + ' 后仍无订单，请及时手动处理db.json中相应数据')
+        }
+        resp = await this.get<ISearchTradeRequestParams, TBinanceResp<ISearchTradeResponseParams>>(orderUrl, params, true);
+      }
       return {
         status: tradeStatusMap[resp.status],
         givenAmount: parseFloat(resp.cummulativeQuoteQty),

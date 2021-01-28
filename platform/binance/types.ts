@@ -34,6 +34,10 @@ export enum ETradeStatus {
   EXPIRED = 'EXPIRED'
 }
 
+export enum EAPIErrorCode {
+  NO_SUCH_ORDER = -2013
+}
+
 export interface ITradeRequestParams {
   symbol: string;
   side: ETradeDirection;
@@ -104,3 +108,10 @@ export interface IGetPriceResponseParams {
   symbol: string;
   price: string;
 }
+
+export interface IBinanceError {
+  code: EAPIErrorCode,
+  msg: string;
+}
+
+export type TBinanceResp<T> = T & IBinanceError;

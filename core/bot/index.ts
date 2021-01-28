@@ -5,7 +5,7 @@ import TradingError, {ETradingErrorType} from '../utils/TradingError'
 import GridError from '../utils/GridError'
 
 const PLATFORM_REQUEST_DURATION = 2000
-const PLATFORM_TRADE_OPERATE_DURATION = 0.5 * 60 * 1000
+const PLATFORM_TRADE_OPERATE_DURATION = 60 * 1000
 
 function isTradeFinish(grid: ITradingGrid) {
   return [
@@ -115,7 +115,7 @@ export default class TradeBot {
       console.log(`当前${this.baseOptions.tradingPair}价格：${price}，满足加仓条件，开始加仓`)
       await this.doBuy(validLastOperateGrid, price)
     } else if (!validNeedSellGrids.length) {
-      console.log(`当前${this.baseOptions.tradingPair}价格：${price}，不满足任何条件，继续运行`)
+      // console.log(`当前${this.baseOptions.tradingPair}价格：${price}，不满足任何条件，继续运行`)
     }
 
   }
@@ -146,7 +146,7 @@ export default class TradeBot {
               operatingPrice
             } = await this.abilities.searchTrade(tid, this.baseOptions.tradingPair)
             await this.abilities.cancelTrade(tid, this.baseOptions.tradingPair)
-            console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 查询条件成功`, {grids})
+            console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 查询条件成功`)
             let reserveAmount = gainAmount
             grids.forEach(grid => {
               grid.sellTids = Array.from(new Set(grid.sellTids.concat(tid)))
@@ -165,7 +165,7 @@ export default class TradeBot {
               tid,
               tradeStatus: status,
               operatingTime: +new Date() + '',
-              operatingTimeFormat: (new Date()).toLocaleTimeString(),
+              operatingTimeFormat: (new Date()).toLocaleString('en-US', {hour12: false}),
               operatingPrice,
               operatingAmount: gainAmount,
               tradingType: ETradingType.SELL,
@@ -208,7 +208,7 @@ export default class TradeBot {
               tid,
               tradeStatus: status,
               operatingTime: +new Date() + '',
-              operatingTimeFormat: (new Date()).toLocaleTimeString(),
+              operatingTimeFormat: (new Date()).toLocaleString('en-US', {hour12: false}),
               operatingPrice,
               operatingAmount: gainAmount,
               tradingType: ETradingType.BUY,
