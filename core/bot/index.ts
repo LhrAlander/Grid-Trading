@@ -144,7 +144,11 @@ export default class TradeBot {
       return;
     }
     const gridPrice = lastOperatingPrice * Math.pow((1 + this.baseOptions.sellUpRate), i - 1);
-    lastGrid.nextBuyPrice = parseFloat((gridPrice * (1 - this.baseOptions.buyDownRate)).toFixed(2));
+    const nextBuyPrice = parseFloat((gridPrice * (1 - this.baseOptions.buyDownRate)).toFixed(2));
+    if (nextBuyPrice <= lastGrid.nextBuyPrice) {
+      return;
+    }
+    lastGrid.nextBuyPrice = nextBuyPrice;
     console.log('开始修改网格价格，当前价格为' + price + ', 上一次操作价格为 ' + lastOperatingPrice + ', 共完整跨越 ' + i + ' 个网格，修改后补仓价为：' + lastGrid.nextBuyPrice);
     this.dbHelper.updateOrAddGrid(lastGrid)
     this.dbHelper.flushIntoFile()
