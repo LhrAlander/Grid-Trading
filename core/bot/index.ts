@@ -98,6 +98,7 @@ export default class TradeBot {
   }
 
   private async dealPrice(price: number) {
+    this.fixSellPrice(price)
     const validNeedSellGrids = this.grids.filter(grid => {
       if (grid.tradingType === ETradingType.SELL) {
         return false
@@ -118,6 +119,35 @@ export default class TradeBot {
       // console.log(`当前${this.baseOptions.tradingPair}价格：${price}，不满足任何条件，继续运行`)
     }
 
+  }
+
+  private fixSellPrice(price: number) {
+    const lastGrid = this.grids[this.grids.length - 1];
+    if (!lastGrid || lastGrid.tradingType === ETradingType.BUY) {
+      return;
+    }
+
+    const lastOperatingPrice = lastGrid.operatingPrice;
+    if (lastOperatingPrice >= price) {
+      return;
+    }
+    let i = 1;
+    while(true) {
+      const gridPrice = lastOperatingPrice * Math.pow((1 + this.baseOptions.sellUpRate), i);
+      if (gridPrice <= price) {
+        i++
+        continue
+      }
+      break
+    }
+    if (i === 1) {
+      return;
+    }
+    const gridPrice = lastOperatingPrice * Math.pow((1 + this.baseOptions.sellUpRate), i - 1);
+    lastGrid.nextBuyPrice = parseFloat((gridPrice * (1 - this.baseOptions.buyDownRate)).toFixed(2));
+    console.log('开始修改网格价格，当前价格为' + price + ', 上一次操作价格为 ' + lastOperatingPrice + ', 共完整跨越 ' + i + ' 个网格，修改后补仓价为：' + lastGrid.nextBuyPrice);
+    this.dbHelper.updateOrAddGrid(lastGrid)
+    this.dbHelper.flushIntoFile()
   }
 
   async doSell(grids: ITradingGrid[], price: number) {
