@@ -8,7 +8,9 @@ class Request {
   get<T, R>(url, options): Promise<R> {
     return new Promise<R>((resolve, reject) => {
       request.get(url, {...proxyOptions, ...options, json: true}, (err, resp, body: R) => {
-        console.log('resp', body, resp.headers)
+        if (resp.statusCode !== 200) {
+          console.log('resp', body, resp.headers, resp.statusCode)
+        }
         if (err) {
           reject(err)
         } else {
@@ -26,6 +28,9 @@ class Request {
         qs: body,
         json: true
       }, (err, resp, data: R) => {
+        if (resp.statusCode !== 200) {
+          console.log('resp', body, resp.headers, resp.statusCode)
+        }
         if (err) {
           reject(err)
         }
@@ -42,6 +47,9 @@ class Request {
         json: true,
         ...options
       }, (err, resp, data: R) => {
+        if (resp.statusCode !== 200) {
+          console.log('resp', body, resp.headers, resp.statusCode)
+        }
         if (err) {
           reject(err)
         }
