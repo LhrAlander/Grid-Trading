@@ -117,11 +117,11 @@ export default class Binance implements IBotPlatformIndependentAbilities {
     try {
       let resp = await this.get<ISearchTradeRequestParams, TBinanceResp<ISearchTradeResponseParams>>(orderUrl, params, true);
       if (resp.code === EAPIErrorCode.NO_SUCH_ORDER) {
-        console.log('查无订单，订单号：' + tid + ' 30s后重新尝试获取订单')
+        console.log('查无订单，订单号：' + tid + ' 5min后重新尝试获取订单')
         let prev = +new Date();
         while(true) {
           const current = +new Date();
-          if (current - prev > 30 * 1000) {
+          if (current - prev > 5 * 60 * 1000) {
             break;
           }
         }
@@ -211,3 +211,6 @@ export default class Binance implements IBotPlatformIndependentAbilities {
     return hmac.update(signString, 'utf-8').digest('hex')
   }
 }
+
+const bot = new Binance();
+bot.searchTrade('7WMPDWVEvh0PFrvRp8g8Rx', 'ETHUSDT');
