@@ -8,6 +8,7 @@ class Request {
   get<T, R>(url, options): Promise<R> {
     return new Promise<R>((resolve, reject) => {
       request.get(url, {...proxyOptions, ...options, json: true}, (err, resp, body: R) => {
+        console.log('resp', body, resp.headers)
         if (err) {
           reject(err)
         } else {
