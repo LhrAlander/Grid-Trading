@@ -212,5 +212,3 @@ export default class Binance implements IBotPlatformIndependentAbilities {
   }
 }
 
-const bot = new Binance();
-bot.searchTrade('7WMPDWVEvh0PFrvRp8g8Rx', 'ETHUSDT');
