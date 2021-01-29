@@ -4,7 +4,7 @@ import {ETradingType, ITradingGrid} from '../database/types'
 import TradingError, {ETradingErrorType} from '../utils/TradingError'
 import GridError from '../utils/GridError'
 
-const PLATFORM_REQUEST_DURATION = 2000
+const PLATFORM_REQUEST_DURATION = 3000
 const PLATFORM_TRADE_OPERATE_DURATION = 60 * 1000
 
 function isTradeFinish(grid: ITradingGrid) {
