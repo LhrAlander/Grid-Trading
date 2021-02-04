@@ -46,7 +46,7 @@ export default class Binance implements IBotPlatformIndependentAbilities {
       type: ETradeType.LIMIT,
       timeInForce: ETimeInForce.GTC,
       timestamp: +new Date(),
-      quantity: Number((anchorCoinCount / price).toFixed(2)),
+      quantity: Number((anchorCoinCount / price).toFixed(4)),
       price,
       newOrderRespType: ETradeRespType.ACK
     }

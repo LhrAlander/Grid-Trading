@@ -161,7 +161,7 @@ export default class TradeBot {
         return res + operatingAmount - Number(sellAmount)
       }, 0)
       amount = amount > balance ? balance : amount;
-      amount = Math.floor( amount * 100 ) / 100
+      amount = Math.floor( amount * 10000 ) / 10000
       if (amount <= 0) {
         this.needUpdateSellTrade = false
         this.start()
@@ -225,7 +225,6 @@ export default class TradeBot {
     try {
       const tid = await this.abilities.buyCoin(price, this.baseOptions.needBuyAnchorAmount, this.baseOptions.tradingPair)
       if (tid) {
-
         console.log(`当前${this.baseOptions.tradingPair}卖单 ${tid} 挂单成功，暂停一分钟运行等待挂单结果`)
         this.needUpdateBuyTrade = true
         setTimeout(async () => {
